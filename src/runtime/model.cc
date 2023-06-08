@@ -1476,7 +1476,7 @@ Tensor FFModel::create_tensor(int const dims[],
                                    0 /*weight*/,
                                    1 /*outputs*/,
                                    NULL,
-                                   NULL);
+                                   NULL);//注意Layer
     input_layer->outputs[0] = tensor;
     layers.push_back(input_layer);
     tensor->owner_layer = input_layer;

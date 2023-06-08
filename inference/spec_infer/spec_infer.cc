@@ -71,7 +71,7 @@ void parse_input_args(char **argv,
     }
     // llm model configs
     if (!strcmp(argv[i], "-llm-config")) {
-      paths.llm_config_file_path = std::string(argv[++i]);
+      paths.llm_config_file_path = std::string(argv[++i]);//定义好语言模型的配置，比如说层数等，示例见inference/models/configs/llama_7B.json
       continue;
     }
     // ssm models types
@@ -93,12 +93,12 @@ void parse_input_args(char **argv,
     // ssm model weights
     if (!strcmp(argv[i], "-ssm-weight")) {
       std::string file_path = std::string(argv[++i]);
-      paths.ssm_weight_file_paths.push_back(file_path);
+      paths.ssm_weight_file_paths.push_back(file_path);//记录好小model的权重路径
       continue;
     }
     // ssm model configs
     if (!strcmp(argv[i], "-ssm-config")) {
-      std::string file_path = std::string(argv[++i]);
+      std::string file_path = std::string(argv[++i]); //定义好小model的config, inference/models/configs/llama_160M.json
       paths.ssm_config_file_paths.push_back(file_path);
       continue;
     }
@@ -143,7 +143,7 @@ void FlexFlow::top_level_task(Task const *task,
   char **argv = command_args.argv;
   int argc = command_args.argc;
   parse_input_args(
-      argv, argc, file_paths, model_types, use_full_precision, verbose);
+      argv, argc, file_paths, model_types, use_full_precision, verbose);//设置好ModelTypes model_types和 FilePaths file_paths;
   if (file_paths.ssm_weight_file_paths.size() == 0) {
     assert(false &&
            "SpecInfer needs at least one SSM for speculative inference");
@@ -170,7 +170,7 @@ void FlexFlow::top_level_task(Task const *task,
   SentencePieceTokenizer *sp_tokenizer = nullptr;
   OptTokenizer *opt_tokenizer = nullptr;
   if (model_types.llm_model_type == ModelType::LLAMA) {
-    sp_tokenizer = new SentencePieceTokenizer(file_paths.tokenizer_file_path);
+    sp_tokenizer = new SentencePieceTokenizer(file_paths.tokenizer_file_path);//这个是干什么用的
   } else {
     std::string tokenizer_folder =
         (!file_paths.tokenizer_file_path.empty() &&
@@ -188,16 +188,18 @@ void FlexFlow::top_level_task(Task const *task,
     opt_tokenizer = new OptTokenizer(vocab_file, merges_file);
   }
 
-  InferenceManager im(ffconfig, BatchConfig::MAX_NUM_TOKENS, 1);
+
+  InferenceManager im(ffconfig, BatchConfig::MAX_NUM_TOKENS, 1); //BatchConfig::MAX_NUM_TOKENS, 定义在include/flexflow/inference.h
   RequestManager rm((model_types.llm_model_type == ModelType::LLAMA)
                         ? (Tokenizer *)sp_tokenizer
                         : (Tokenizer *)opt_tokenizer,
                     /*verbose*/ verbose,
-                    file_paths.output_file_path);
+                    file_paths.output_file_path);//这个sp_tokenizer是干什么的，class ReqeustManager定义在include/flexflow/inference.h,实现在src/runtime/request_manager.cc
+        
   int total_num_requests = 0;
   {
     using json = nlohmann::json;
-    std::ifstream file_handle(file_paths.prompt_file_path);
+    std::ifstream file_handle(file_paths.prompt_file_path);//解析prompt文件，prompt文件即为用户的输入
     assert(file_handle.good() && "Prompt file does not exist.");
     json prompt_json = json::parse(file_handle,
                                    /*parser_callback_t */ nullptr,
@@ -207,11 +209,11 @@ void FlexFlow::top_level_task(Task const *task,
       std::string text = prompt.get<std::string>();
       printf("Prompt[%d]: %s\n", total_num_requests, text.c_str());
       total_num_requests++;
-      rm.register_new_request(text, 128 /*max_sequence_length*/);
+      rm.register_new_request(text, 128 /*max_sequence_length*/);//每一句话即为请求，注册请求数量
     }
   }
 
-  FFModel beam_model(ffconfig);
+  FFModel beam_model(ffconfig);//FFModel在include/flexflow/model.h，很重要
   FFModel tree_model(ffconfig);
   if (model_types.ssm_model_types[0] == ModelType::LLAMA) {
     LLAMA::create_llama_model(beam_model,
@@ -220,7 +222,7 @@ void FlexFlow::top_level_task(Task const *task,
                               file_paths.ssm_weight_file_paths[0],
                               1,
                               BEAM_SEARCH_MODE,
-                              use_full_precision);
+                              use_full_precision);//LLAMA::create_llama_model在src/runtime/llama.cc
   } else {
     OPT::create_opt_model(beam_model,
                           im,

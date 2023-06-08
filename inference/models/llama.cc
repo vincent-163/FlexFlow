@@ -15,6 +15,8 @@
 
 #include "llama.h"
 
+#include <iostream>
+
 namespace FlexFlow {
 
 using namespace Legion;
@@ -26,9 +28,10 @@ void LLAMA::create_llama_model(FFModel &ff,
                                int num_pipeline_stages,
                                InferenceMode mode,
                                bool use_full_precision) {
-  Config llama_config(model_config_file_path);
+  Config llama_config(model_config_file_path);//设置好模型的配置文件
   llama_config.printConfig();
   //------------------------------compute machine views ------------------
+  std::cout<<"ff.config.workersPerNode:"<<ff.config.workersPerNode <<" and  ff.config.numNodes"<<ff.config.numNodes <<std::endl;
   int num_devices = ff.config.workersPerNode * ff.config.numNodes;
   std::vector<MachineView> machine_views;
   for (int i = 0; i < num_devices; i++) {
@@ -48,7 +51,7 @@ void LLAMA::create_llama_model(FFModel &ff,
   {
     assert(llama_config.max_num_tokens <= BatchConfig::MAX_NUM_TOKENS);
     int const token_dims[] = {BatchConfig::MAX_NUM_TOKENS, 1};
-    input = ff.create_tensor<2>(token_dims, DT_INT32);
+    input = ff.create_tensor<2>(token_dims, DT_INT32);//TODO 06-08,这个create_tensor值得研究，创建tenso, FFModel::create_tensor代码在src/runtime/model.cc
   }
   mapping[input].push_back(machine_views[0]);
 
