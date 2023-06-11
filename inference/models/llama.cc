@@ -119,7 +119,7 @@ void LLAMA::create_llama_model(FFModel &ff,
             false,
             DT_NONE,
             NULL,
-            true);
+            true);//mha是这个multihead attention的output
         break;
       }
       case TREE_VERIFY_MODE: {
@@ -135,7 +135,8 @@ void LLAMA::create_llama_model(FFModel &ff,
             false,   /*add_zero_attn*/
             DT_NONE, /*data_type*/
             nullptr, /*kernel_initializer*/
-            true     /*apply_rotary_embedding*/
+            true     /*apply_rotary_embedding*/ //mha是这个multihead attention的output
+            //用大模型来验证
         );
         break;
       }

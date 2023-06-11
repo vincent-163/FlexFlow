@@ -1532,6 +1532,7 @@ Parameter FFModel::create_weight_legion_ordering(int numdim,
   int c_dims[MAX_TENSOR_DIM];
   for (int i = 0; i < numdim; i++) {
     c_dims[i] = dims[numdim - 1 - i];
+    std::cout<<"Parameter FFModel::create_weight_legion_ordering, i:"<<i << ", c_dims[i]:"<<c_dims[i]<<std::endl;
   }
   return create_weight(
       numdim, c_dims, data_type, layer, create_grad, initializer, sync_type);
@@ -1570,6 +1571,7 @@ Parameter FFModel::create_weight(int numdim,
   p->num_dims = numdim;
   for (int i = 0; i < numdim; i++) {
     p->dims[i] = dims[numdim - 1 - i];
+    std::cout<<"Parameter FFModel::create_weight, i:"<<i << ", p->dims[i]:"<<p->dims[i]<<std::endl;
   }
   assert(p->get_volume() > 0);
   return p;

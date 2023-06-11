@@ -86,7 +86,7 @@ Tensor
                    1 /*inputs*/,
                    weight_num /*weights*/,
                    1 /*outputs*/,
-                   casted_input);
+                   casted_input);//设置好这层的input等
   } else {
     li = new Layer(this,
                    OP_SPEC_INC_MULTIHEAD_SELF_ATTENTION,
@@ -100,22 +100,26 @@ Tensor
   {
     int numdims = input->num_dims;
     int dims[MAX_TENSOR_DIM];
+    std::cout<<"FFModel::spec_inc_multihead_self_attention, the numdims:"<<numdim<<std::endl;
     for (int i = 0; i < numdims; i++) {
       dims[i] = input->dims[i];
     }
     dims[0] = embed_dim;
     li->outputs[0] = create_tensor_legion_ordering(
-        numdims, dims, data_type, li, 0, true /*create_grad*/);
+        numdims, dims, data_type, li, 0, true /*create_grad*/);//定义好生成的output
   }
   {
     // Compute weight size
     int qProjSize = kdim, kProjSize = kdim, vProjSize = kdim,
         oProjSize = embed_dim;
+    std::cout<<"FFModel::spec_inc_multihead_self_attention, the qkvProjSize:"<<kdim<<" oProjSize:"<<embed_dim<<std::endl;
     int qSize = input->dims[0], kSize = input->dims[0], vSize = input->dims[0];
+    std::cout<<"FFModel::spec_inc_multihead_self_attention, the qkvSize:"<<input->dims[0]<<std::endl;
     int qParas = qProjSize * qSize;
     int kParas = kProjSize * kSize;
     int vParas = vProjSize * vSize;
     int oParas = oProjSize * (vProjSize > 0 ? vProjSize : vSize);
+    std::cout<<"FFModel::spec_inc_multihead_self_attention, the qParas:"<<qParas<<" kParas:"<<kParas<<" vParas:"<<vParas<<" oParas:"<<oParas<<std::endl;
     int dims[2] = {qParas + kParas + vParas + oParas, num_heads};
     li->weights[0] = create_weight_legion_ordering(2,
                                                    dims,
@@ -134,7 +138,7 @@ Tensor
                                                    li,
                                                    true /*create_grad*/,
                                                    kernel_initializer,
-                                                   CHOSEN_SYNC_TYPE);
+                                                   CHOSEN_SYNC_TYPE);//干什么用的呢，不是很理解
   }
   li->data_type = data_type;
   li->add_int_property("embed_dim", embed_dim);
