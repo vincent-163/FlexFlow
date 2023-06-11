@@ -1464,7 +1464,7 @@ Tensor FFModel::create_tensor(int const dims[],
                               Layer const *owner_layer,
                               int owner_idx,
                               bool create_grad) {
-  Tensor tensor = new TensorBase();
+  Tensor tensor = new TensorBase(); //typedef TensorBase *Tensor;
   tensor->tensor_guid = tensor_global_guid++;
   tensor->data_type = data_type;
   if (owner_layer == NULL) {
@@ -1488,7 +1488,8 @@ Tensor FFModel::create_tensor(int const dims[],
   tensor->create_gradients = create_grad;
   tensor->num_dims = NDIM;
   for (int i = 0; i < NDIM; i++) {
-    tensor->dims[i] = dims[NDIM - 1 - i];
+    tensor->dims[i] = dims[NDIM - 1 - i];//假设NDIM=2, 那i=0时，tensor->dim[0] = dims[2-1-0]=dims[1]
+    //i = 1, tensor->dim[1] = dims[2-1-1]=dims[0], 为什么这么设计？
   }
   return tensor;
 }

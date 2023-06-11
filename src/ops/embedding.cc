@@ -56,12 +56,15 @@ Tensor FFModel::embedding(const Tensor input,
                            1 /*outputs*/,
                            input);
   if (aggr == AGGR_MODE_NONE) {
+    std::cout<<"FFModel::embedding, input->num_dims:"<<input->num_dims<<std::endl;
     int numdims = input->num_dims + 1;
     int dims[MAX_TENSOR_DIM];
     for (int i = 1; i < numdims; i++) {
       dims[i] = input->dims[i - 1];
+      std::cout<<"FFModel::embedding, i"<<i<<", dims[i]:"<<dims[i]<<std::endl;
     }
     dims[0] = out_dim;
+    std::cout<<"FFModel::embedding,dims[0]:"<<dims[0]<<std::endl;
     embed->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, embed->data_type, embed, 0, true /*create_grad*/);
   } else {

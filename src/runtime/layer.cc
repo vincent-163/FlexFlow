@@ -27,6 +27,7 @@ Layer::Layer(FFModel *model,
   pcname = pcname + "_" + std::to_string(this->layer_guid.id);
   assert(pcname.length() < MAX_OPNAME);
   std::strcpy(name, pcname.c_str());
+  std::cout<<"Layer::Layer, layer_guid:" << layer_guid << "Layer name: "<<name << " numInputs:"<< numInputs << " numWeights"<< numWeights<< "numOutputs"<<numOutputs <<std::endl;
   std::vector<Tensor> tensors;
   tensors.push_back(_input1);
   tensors.push_back(_input2);

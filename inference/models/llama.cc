@@ -53,7 +53,7 @@ void LLAMA::create_llama_model(FFModel &ff,
     int const token_dims[] = {BatchConfig::MAX_NUM_TOKENS, 1};
     input = ff.create_tensor<2>(token_dims, DT_INT32);//TODO 06-08,这个create_tensor值得研究，创建tenso, FFModel::create_tensor代码在src/runtime/model.cc
   }
-  mapping[input].push_back(machine_views[0]);
+  mapping[input].push_back(machine_views[0]);//input的machineview是machine_views[0]
 
   Initializer *embed_init = new UniformInitializer(std::rand(), 0, 0);
 
@@ -84,11 +84,12 @@ void LLAMA::create_llama_model(FFModel &ff,
   int num_transformer_layers_per_stage =
       (num_transformer_layers + num_pipeline_stages - 1) / num_pipeline_stages;
 
+  std::cout<<"LLAMA::create_llama_model:"<< " num_transformer_layers"<<num_transformer_layers<< " num_transformer_layers_per_stage:"<<num_transformer_layers_per_stage<<std::endl;
   for (int i = 0; i < num_transformer_layers; i++) {
     // step 1: attention
     std::vector<int> axes = {2};
     Tensor att_norm =
-        ff.rms_norm(token, llama_config.norm_eps, llama_config.dim);
+        ff.rms_norm(token, llama_config.norm_eps, llama_config.dim);//llama_config.dim是hidden size 
     Layer *attention_norm = ff.layers.back();
 
     if (i % num_transformer_layers_per_stage == 0) {
@@ -107,7 +108,7 @@ void LLAMA::create_llama_model(FFModel &ff,
     switch (mode) {
       case BEAM_SEARCH_MODE: {
         mha = ff.spec_inc_multihead_self_attention(
-            att_norm,
+            att_norm,//上一层的output, 给这一层的Inuput
             llama_config.dim,
             llama_config.n_heads,
             llama_config.dim / llama_config.n_heads,
