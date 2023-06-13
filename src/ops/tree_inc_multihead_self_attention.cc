@@ -174,7 +174,7 @@ Op *TreeIncMultiHeadSelfAttention::create_operator_from_layer(
   bool bias = (bool)value;
   layer->get_int_property("add_bias_kv", value);
   bool add_bias_kv = (bool)value;
-  layer->get_int_property("add_zero_attn", value);
+  layer->get_int_property("add_zero_attn", value);      
   bool add_zero_attn = (bool)value;
   layer->get_int_property("apply_rotary_embedding", value);
   bool apply_rotary_embedding = (bool)value;
