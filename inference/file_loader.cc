@@ -288,7 +288,7 @@ void FileDataLoader::load_single_weight_tensor(FFModel *ff,
 
   ParallelTensor weight_pt;
   ff->get_parallel_tensor_from_tensor(weight, weight_pt);
-  weight_pt->set_tensor<DT>(ff, dims_vec, data);
+  weight_pt->set_tensor<DT>(ff, dims_vec, data);//将预训练权重导入到weight_pt中
 
   delete data;
 }

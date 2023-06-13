@@ -155,6 +155,8 @@ void InferenceManager::init_operators_inference(FFModel *model) {
             ->create_input_partition_inference(*model, inputs, outputs);
       }
       op->init_inference(*model, inputs, outputs);
+      //TODO 0613,这一步很重要，初始化op的inputs和outputs
+      //TODO 0613, 暂时不需要理解，因为涉及到了一些比较复杂的实现，也不知道实现的逻辑是什么，都是调用了Legion的一些东西
     }
   }
 }
@@ -182,6 +184,7 @@ FutureMap InferenceManager::inference(FFModel *model,
   bool found_input_operator = false;
   for (size_t o = 0; o < model->operators.size(); o++) {
     Op *op = model->operators[o];
+    //可以打印出OP的type 
     if (op->op_type == OP_WEIGHT) {
       continue;
     }
@@ -224,6 +227,8 @@ FutureMap InferenceManager::inference(FFModel *model,
     }
     fm = op->inference(*model, bc, inputs, outputs);
   }
+  //TODO 0613,这一步很重要，初始化op的inputs和outputs
+      //TODO 0613, 暂时不需要理解，因为涉及到了一些比较复杂的实现，也不知道实现的逻辑是什么，都是调用了Legion的一些东西
   return fm;
 };
 

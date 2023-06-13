@@ -257,7 +257,7 @@ void FlexFlow::top_level_task(Task const *task,
   while (rm.get_num_processed_requests() < total_num_requests) {
     int depth = 0;
     // Beam Search
-    beam_bc = rm.prepare_next_batch_init(tree_bc, tree_ir);
+    beam_bc = rm.prepare_next_batch_init(tree_bc, tree_ir);//TODO, 不是很理解这个函数是干什么的
     if (rm.get_num_processed_requests() >= total_num_requests) {
       break;
     }

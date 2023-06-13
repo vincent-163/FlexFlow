@@ -129,6 +129,7 @@ BatchConfig RequestManager::prepare_next_batch(BatchConfig const &old_bc,
                         request.tokens.size());
       std::string output = tokenizer->Decode(request.tokens);
       log_req_mgr.print("Final output: %s", output.c_str());
+      log_req_mgr.print("RequestManager::prepare_next_batch, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests)
       num_processed_requests++;
       ProfileInfo profile_info = profiling_requests[request.guid];
       profile_info.finish_time = Realm::Clock::current_time_in_microseconds();
@@ -362,14 +363,20 @@ BeamSearchBatchConfig
   }
   // Step 1: use result to update requests
   BeamSearchBatchConfig new_bc;
+  log_req_mgr.print("********************1 start prepare_next_batch_init*********************");
+  old_bc.print();
+  new_bc.print();
+  log_req_mgr.print("********************2 start prepare_next_batch_init*********************");
   new_bc.num_tokens = 0;
   int result_index = 0;
-
+  log_req_mgr.print("RequestManager::prepare_next_batch_init, dfs_tree_inputs_map.size():%d", dfs_tree_inputs_map.size());
   for (int i = 0; i < BatchConfig::MAX_NUM_REQUESTS; i++) {
+    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<<" old_bc.request_completed[i]:"<<old_bc.request_completed[i]<<"old_bc.num_tokens:"<<old_bc.num_tokens<< <<std::endl;
     if (old_bc.request_completed[i]) {
       continue;
     }
     size_t guid = old_bc.requestsInfo[i].request_guid;
+    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<< " the guid:"<<guid<<std::endl;
     Request &request = running_request_queue[guid];
 
     // Verify this: get verified tokens from result
@@ -385,11 +392,12 @@ BeamSearchBatchConfig
       committed_tokens.at(guid).clear();
     }
     // iterate through all the tokens that belong to request i
+    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<< " the old_bc.num_tokens:"<<old_bc.num_tokens<<" result_index:"<< result_index<< " old_bc.tokensInfo[result_index].request_index" << old_bc.tokensInfo[result_index].request_index std::endl;
     while (result_index < old_bc.num_tokens &&
            old_bc.tokensInfo[result_index].request_index == i) {
       // new tokens have not been appended yet, so the last appended token is
       // the root of the beam search token tree
-      int root_abs_depth = request.tokens.size() - 1;
+      int root_abs_depth = request.tokens.size() - 1;//results.tokens是用户给的prompt
       if (old_bc.tokensInfo[result_index].abs_depth_in_request >=
           root_abs_depth) {
         // append to tree_outputs a pair consisting of (token id, depth)
@@ -421,9 +429,10 @@ BeamSearchBatchConfig
       }
       result_index++;
     }
-
+    log_req_mgr.print("dfs_tree_inputs_map.size():%d", dfs_tree_inputs_map.size());
     std::vector<std::pair<BatchConfig::TokenId, int>> verified_tokens =
-        traverse_verify_tree(guid, dfs_tree_inputs_map.at(guid), tree_outputs);
+        traverse_verify_tree(guid, dfs_tree_inputs_map.at(guid), tree_outputs);//这里的dfs_tree_inputs是什么？
+        //一个重要的函数 Request_manager::traverse_verify_tree
     log_req_mgr.print("Number of Verified Tokens = %zu",
                       verified_tokens.size());
     // check if the request is finished
@@ -439,9 +448,10 @@ BeamSearchBatchConfig
       log_req_mgr.print("[Done] guid(%zu) with final length(%zu)",
                         request.guid,
                         request.tokens.size());
-      std::string output = tokenizer->Decode(request.tokens);
+      std::string output = tokenizer->Decode(request.tokens);//解码，
       log_req_mgr.print("Final output: %s", output.c_str());
       new_bc.request_completed[i] = true;
+      log_req_mgr.print("RequestManager::prepare_next_batch_init, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests)
       num_processed_requests++;
       ProfileInfo profile_info = profiling_requests[request.guid];
       profile_info.finish_time = Realm::Clock::current_time_in_microseconds();
@@ -588,12 +598,16 @@ BeamSearchBatchConfig
     }
   }
 
-  if (verbose) {
-    std::cout << "prepare_next_batch_init OLD vs NEW batchconfigs below:"
-              << std::endl;
-    old_bc.print();
-    new_bc.print();
-  }
+  log_req_mgr.print("********************1 finish prepare_next_batch_init*********************");
+  old_bc.print();
+  new_bc.print();
+  log_req_mgr.print("********************2 finish prepare_next_batch_init*********************");
+  // if (verbose) {
+  //   std::cout << "prepare_next_batch_init OLD vs NEW batchconfigs below:"
+  //             << std::endl;
+  //   old_bc.print();
+  //   new_bc.print();
+  // }
   return new_bc;
 }
 
