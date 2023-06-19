@@ -41,7 +41,7 @@ Tensor create_moe(FFModel *model,
   // MoE model
   Tensor gate_preds = model->dense(input, moeConfig->num_exp, AC_MODE_RELU);
   Tensor topK_output[2];
-  model->top_k(gate_preds, topK_output, moeConfig->num_select, false);
+  model->top_k(gate_preds, topK_output, moeConfig->num_select, false);//选出专家
 
   assert(moeConfig->num_exp % moeConfig->experts_per_block == 0);
   int nblocks = moeConfig->num_exp / moeConfig->experts_per_block;
