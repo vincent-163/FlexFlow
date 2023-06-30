@@ -74,6 +74,7 @@ Tensor FFModel::inc_multihead_self_attention_verify(
     float scaling_factor,
     bool qk_prod_scaling,
     char const *name) {
+  input->print("FFModel::inc_multihead_self_attention_verify, the input shape:");
   if (data_type == DT_NONE) {
     data_type = input->data_type;
   }
@@ -108,6 +109,7 @@ Tensor FFModel::inc_multihead_self_attention_verify(
     dims[0] = embed_dim;
     li->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, data_type, li, 0, true /*create_grad*/);
+    li->outputs[0]->print("FFModel::inc_multihead_self_attention_verify, the li->outputs[0] shape:");
   }
   {
     // Compute weight size
@@ -119,6 +121,10 @@ Tensor FFModel::inc_multihead_self_attention_verify(
     int vParas = vProjSize * vSize;
     int oParas = oProjSize * (vProjSize > 0 ? vProjSize : vSize);
     int dims[2] = {qParas + kParas + vParas + oParas, num_heads};
+    std::cout<<"FFModel::inc_multihead_self_attention_verify,qProjSize(kProjSize)(vProjSize)(kdim):"<<qProjSize<<std::endl;
+    std::cout<<"FFModel::inc_multihead_self_attention_verify,qSize(kSize)(vSize)(input->dism[0]):"<<kSize<<std::endl;
+    std::cout<<"FFModel::inc_multihead_self_attention_verify,qParas(kParas)(vParas):"<<kParas<<" oParas:"<<oParas<<"num_heads:"<<num_heads<<std::endl;
+  
     li->weights[0] = create_weight_legion_ordering(2,
                                                    dims,
                                                    data_type,
@@ -126,6 +132,7 @@ Tensor FFModel::inc_multihead_self_attention_verify(
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);
+    li->weights[0]->print("FFModel::inc_multihead_self_attention_verify, the li->weights[0] shape:");
   }
   if (bias) {
     // q, k, v, o
@@ -137,6 +144,7 @@ Tensor FFModel::inc_multihead_self_attention_verify(
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);
+    li->weights[1]->print("FFModel::inc_multihead_self_attention_verify, the li->weights[1] shape:");
   }
   li->data_type = data_type;
   li->add_int_property("embed_dim", embed_dim);

@@ -52,6 +52,7 @@ void OPT::create_opt_model(FFModel &ff,
     input = ff.create_tensor<2>(token_dims, DT_INT32);
     position_input = ff.create_tensor<2>(token_dims, DT_INT32);
   }
+  input->print("input tensor");
   mapping[input].push_back(machine_views[0]);
   mapping[position_input].push_back(machine_views[0]);
 
@@ -76,7 +77,7 @@ void OPT::create_opt_model(FFModel &ff,
                          NULL,
                          embed_init);
   }
-
+  token->print("after embedding ,the token tensor");
   Layer *embedding = ff.layers.back();
   weights_layers.emplace("embed_tokens_weight", embedding);
 
@@ -98,14 +99,16 @@ void OPT::create_opt_model(FFModel &ff,
                                         NULL,
                                         embed_init);
   }
+  positional_embedding->print("after embedding ,the positional_embedding tensor");
   Layer *pos_embedding = ff.layers.back();
   weights_layers.emplace("embed_positions_weight", pos_embedding);
 
   Tensor residual = ff.add(token, positional_embedding);
-
+  residual->print("after add ,the residual tensor");
   int num_transformer_layers_per_stage =
       (32 + num_pipeline_stages - 1) / num_pipeline_stages;
-  for (int i = 0; i < opt_config.num_hidden_layers; i++) {
+  for (int i = 0; i < 3; i++) { //To debug
+  // #for (int i = 0; i < opt_config.num_hidden_layers; i++) {
     // 125m, 1.7B, ..., 175B applies layer norm BEFORE attention,
     // 350m applies layer norm AFTER attention
     // https://github.com/huggingface/transformers/blob/main/src/transformers/models/opt/modeling_opt.py#LL324C1-L325C1
@@ -113,6 +116,7 @@ void OPT::create_opt_model(FFModel &ff,
 
     Tensor hidden_states = ff.layer_norm(
         residual, axes, opt_config.layer_norm_elementwise_affine, 1e-05);
+    hidden_states->print("after layer_norm ,the hidden_states tensor");
     Layer *self_attn_layer_norm = ff.layers.back();
     weights_layers.emplace("layers_" + std::to_string(i) +
                                "_attention_layer_norm_weight",

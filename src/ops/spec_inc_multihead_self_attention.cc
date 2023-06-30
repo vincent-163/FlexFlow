@@ -72,6 +72,7 @@ Tensor
                                                float scaling_factor,
                                                bool qk_prod_scaling,
                                                char const *name) {
+  input->print("FFModel::spec_inc_multihead_self_attention, the input tensor is: ");
   if (data_type == DT_NONE) {
     data_type = input->data_type;
   }
@@ -100,13 +101,14 @@ Tensor
   {
     int numdims = input->num_dims;
     int dims[MAX_TENSOR_DIM];
-    std::cout<<"FFModel::spec_inc_multihead_self_attention, the numdims:"<<numdim<<std::endl;
+    std::cout<<"FFModel::spec_inc_multihead_self_attention, the numdims:"<<numdims<<std::endl;
     for (int i = 0; i < numdims; i++) {
       dims[i] = input->dims[i];
     }
     dims[0] = embed_dim;
     li->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, data_type, li, 0, true /*create_grad*/);//定义好生成的output
+    li->outputs[0]->print("FFModel::spec_inc_multihead_self_attention,create_tensor_legion_ordering, the output tensor is: ");
   }
   {
     // Compute weight size
@@ -128,6 +130,7 @@ Tensor
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);
+    li->weights[0]->print("FFModel::spec_inc_multihead_self_attention,create_weight_legion_ordering, the weight tensor is: ");
   }
   if (bias) {
     // q, k, v, o
@@ -139,6 +142,7 @@ Tensor
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);//干什么用的呢，不是很理解
+    li->weights[1]->print("FFModel::spec_inc_multihead_self_attention,create_weight_legion_ordering, the weight tensor is: ");
   }
   li->data_type = data_type;
   li->add_int_property("embed_dim", embed_dim);

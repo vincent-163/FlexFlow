@@ -73,6 +73,7 @@ Tensor FFModel::layer_norm(const Tensor input,
   // layernorm. In FlexFlow, instead, axes should contain the INDICES of the
   // dimensions in question. We do this because the size of a dimension might be
   // different when splitting a tensor in model parallelism.
+  input->print("FFModel::layer_norm, input shape:");
   assert(
       axes.size() <= input->num_dims &&
       "number of axes must be less than tensor dimensions"); // input does not
@@ -126,6 +127,7 @@ Tensor FFModel::layer_norm(const Tensor input,
                                                  ln,
                                                  0,
                                                  true /*create_grad*/);
+  ln->outputs[0]->print("FFModel::layer_norm, output shape:");
   if (num_weights == 2) {
     int numdims = axes.size();
     int dims[numdims];
@@ -139,6 +141,7 @@ Tensor FFModel::layer_norm(const Tensor input,
                                                    true /*create_grad*/,
                                                    nullptr,
                                                    CHOSEN_SYNC_TYPE);
+    ln->weights[0]->print("FFModel::layer_norm, ln->weight[0] shape:");
     ln->weights[1] = create_weight_legion_ordering(numdims,
                                                    dims,
                                                    input->data_type,
@@ -146,6 +149,8 @@ Tensor FFModel::layer_norm(const Tensor input,
                                                    true /*create_grad*/,
                                                    nullptr,
                                                    CHOSEN_SYNC_TYPE);
+    ln->weights[1]->print("FFModel::layer_norm, ln->weight[1] shape:");
+
   }
   ln->add_int_property("elementwise_affine", elementwise_affine);
   ln->add_int_vector_property("axes", axes);

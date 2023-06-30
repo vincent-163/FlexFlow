@@ -73,6 +73,7 @@ Tensor FFModel::inc_multihead_self_attention(const Tensor input,
                                              float scaling_factor,
                                              bool qk_prod_scaling,
                                              char const *name) {
+  input->print("FFModel::inc_multihead_self_attention, input.shape:");
   if (data_type == DT_NONE) {
     data_type = input->data_type;
   }
@@ -107,6 +108,7 @@ Tensor FFModel::inc_multihead_self_attention(const Tensor input,
     dims[0] = embed_dim;
     li->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, data_type, li, 0, true /*create_grad*/);
+    li->outputs[0]->print("FFModel::inc_multihead_self_attention, li->outputs[0].shape:");
   }
   {
     // Compute weight size
@@ -125,6 +127,7 @@ Tensor FFModel::inc_multihead_self_attention(const Tensor input,
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);
+    li->weights[0]->print("FFModel::inc_multihead_self_attention, li->weights[0].shape:");
   }
   if (bias) {
     // q, k, v, o
@@ -136,6 +139,7 @@ Tensor FFModel::inc_multihead_self_attention(const Tensor input,
                                                    true /*create_grad*/,
                                                    kernel_initializer,
                                                    CHOSEN_SYNC_TYPE);
+    li->weights[1]->print("FFModel::inc_multihead_self_attention, li->weights[1].shape:");
   }
   li->data_type = data_type;
   li->add_int_property("embed_dim", embed_dim);

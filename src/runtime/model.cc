@@ -2942,10 +2942,10 @@ Op *FFModel::create_operator_from_layer(
 
 void FFModel::create_operators_from_layers() {
   std::map<const Tensor, ParallelTensor> tensors_to_parallel_tensors;
-  std::cout<<"FFModel::create_operators_from_layers, the tensors_to_parallel_tensors.size()<<"tensors_to_parallel_tensors.size();
+  std::cout<<"FFModel::create_operators_from_layers, the tensors_to_parallel_tensors.size()"<<tensors_to_parallel_tensors.size();
   int layer_number = 0;
   for (auto const &l : layers) {
-    std::cout<<"FFModel::create_operators_from_layers, the layer_number:"<<layer_number<<" and l->numInputs:"<<l->numInputs<<" and i:"<<i <<" layer name:"<<l->name<<std::endl; 
+    std::cout<<"FFModel::create_operators_from_layers, the layer_number:"<<layer_number<<" and l->numInputs:"<<l->numInputs <<" layer name:"<<l->name<<std::endl; 
     layer_number++;
     std::vector<ParallelTensor> inputs;
     for (int i = 0; i < l->numInputs; i++) {

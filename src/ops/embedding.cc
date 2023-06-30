@@ -55,6 +55,7 @@ Tensor FFModel::embedding(const Tensor input,
                            1 /*weights*/,
                            1 /*outputs*/,
                            input);
+  std::cout<<"\n*************start FFModel::embedding*************\n"<<std::endl;
   if (aggr == AGGR_MODE_NONE) {
     std::cout<<"FFModel::embedding, input->num_dims:"<<input->num_dims<<std::endl;
     int numdims = input->num_dims + 1;
@@ -64,7 +65,7 @@ Tensor FFModel::embedding(const Tensor input,
       std::cout<<"FFModel::embedding, i"<<i<<", dims[i]:"<<dims[i]<<std::endl;
     }
     dims[0] = out_dim;
-    std::cout<<"FFModel::embedding,dims[0]:"<<dims[0]<<std::endl;
+    std::cout<<"FFModel::embedding,out_dim(dims[0]):"<<dims[0]<<std::endl;
     embed->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, embed->data_type, embed, 0, true /*create_grad*/);
   } else {
@@ -79,6 +80,7 @@ Tensor FFModel::embedding(const Tensor input,
   }
   {
     int dims[2] = {out_dim, num_entries};
+    std::cout<<"FFModel::embedding, create_weight_legion_ordering, the dims[0]:"<<dims[0] <<" and dims[1]:"<<dims[1] << std::endl;
     embed->weights[0] = create_weight_legion_ordering(2,
                                                       dims,
                                                       dtype,
@@ -93,6 +95,8 @@ Tensor FFModel::embedding(const Tensor input,
   embed->add_int_property("aggr_mode", aggr);
   embed->add_initializer("kernel", kernel_initializer);
   layers.push_back(embed);
+  std::cout<<"\n*************end FFModel::embedding*************\n"<<std::endl;
+
   return embed->outputs[0];
 }
 

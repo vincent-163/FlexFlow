@@ -40,6 +40,7 @@ Tensor FFModel::dense(const Tensor input,
                       RegularizerMode kernel_reg_type,
                       float kernel_reg_lambda,
                       char const *name) {
+  input->print("FFModel::dense, the input shape:");
   if (data_type == DT_NONE) {
     data_type = input->data_type;
   }
@@ -74,6 +75,7 @@ Tensor FFModel::dense(const Tensor input,
     dims[0] = outDim;
     li->outputs[0] = create_tensor_legion_ordering(
         numdims, dims, data_type, li, 0, true /*create_grad*/);
+    li->outputs[0]->print("FFModel::dense, the li->outputs[0] shape:");
   }
   {
     int dims[2] = {input->dims[0], outDim};
@@ -85,6 +87,7 @@ Tensor FFModel::dense(const Tensor input,
                                       true /*create_grad*/,
                                       kernel_initializer,
                                       CHOSEN_SYNC_TYPE);
+    li->weights[KERNEL_IDX]->print("FFModel::dense, the li->weights[KERNEL_IDX] shape:");
   }
   if (use_bias) {
     int dims[1] = {outDim};
@@ -95,6 +98,7 @@ Tensor FFModel::dense(const Tensor input,
                                                           true /*create_grad*/,
                                                           bias_initializer,
                                                           CHOSEN_SYNC_TYPE);
+    li->weights[BIAS_IDX]->print("FFModel::dense, the li->weights[BIAS_IDX] shape:");
   }
   li->add_int_property("use_bias", use_bias);
   li->add_int_property("out_dim", outDim);

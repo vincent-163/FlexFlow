@@ -129,7 +129,7 @@ BatchConfig RequestManager::prepare_next_batch(BatchConfig const &old_bc,
                         request.tokens.size());
       std::string output = tokenizer->Decode(request.tokens);
       log_req_mgr.print("Final output: %s", output.c_str());
-      log_req_mgr.print("RequestManager::prepare_next_batch, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests)
+      log_req_mgr.print("RequestManager::prepare_next_batch, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests);
       num_processed_requests++;
       ProfileInfo profile_info = profiling_requests[request.guid];
       profile_info.finish_time = Realm::Clock::current_time_in_microseconds();
@@ -371,7 +371,7 @@ BeamSearchBatchConfig
   int result_index = 0;
   log_req_mgr.print("RequestManager::prepare_next_batch_init, dfs_tree_inputs_map.size():%d", dfs_tree_inputs_map.size());
   for (int i = 0; i < BatchConfig::MAX_NUM_REQUESTS; i++) {
-    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<<" old_bc.request_completed[i]:"<<old_bc.request_completed[i]<<"old_bc.num_tokens:"<<old_bc.num_tokens<< <<std::endl;
+    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<<" old_bc.request_completed[i]:"<<old_bc.request_completed[i]<<"old_bc.num_tokens:"<<old_bc.num_tokens<<std::endl;
     if (old_bc.request_completed[i]) {
       continue;
     }
@@ -392,7 +392,7 @@ BeamSearchBatchConfig
       committed_tokens.at(guid).clear();
     }
     // iterate through all the tokens that belong to request i
-    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<< " the old_bc.num_tokens:"<<old_bc.num_tokens<<" result_index:"<< result_index<< " old_bc.tokensInfo[result_index].request_index" << old_bc.tokensInfo[result_index].request_index std::endl;
+    std::cout<<"RequestManager::prepare_next_batch_init, the i:"<<i<< " the old_bc.num_tokens:"<<old_bc.num_tokens<<" result_index:"<< result_index<< " old_bc.tokensInfo[result_index].request_index" << old_bc.tokensInfo[result_index].request_index<< std::endl;
     while (result_index < old_bc.num_tokens &&
            old_bc.tokensInfo[result_index].request_index == i) {
       // new tokens have not been appended yet, so the last appended token is
@@ -451,7 +451,7 @@ BeamSearchBatchConfig
       std::string output = tokenizer->Decode(request.tokens);//解码，
       log_req_mgr.print("Final output: %s", output.c_str());
       new_bc.request_completed[i] = true;
-      log_req_mgr.print("RequestManager::prepare_next_batch_init, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests)
+      log_req_mgr.print("RequestManager::prepare_next_batch_init, profiling_requests.size:(%zu) and num_processed_requests:(%zu)",profiling_requests, num_processed_requests);
       num_processed_requests++;
       ProfileInfo profile_info = profiling_requests[request.guid];
       profile_info.finish_time = Realm::Clock::current_time_in_microseconds();
