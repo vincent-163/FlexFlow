@@ -15,6 +15,7 @@ public:
 public:
   FFHandler handle;
   bool profiling; // Measure the run time of the task
+  size_t transformer_layer_id;
   bool trainableInputs[MAX_NUM_INPUTS];
   DataType input_type[MAX_NUM_INPUTS];
   DataType weight_type[MAX_NUM_WEIGHTS];

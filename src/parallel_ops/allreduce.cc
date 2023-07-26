@@ -18,6 +18,8 @@
 #include "flexflow/model.h"
 #include "flexflow/parallel_ops/kernels/allreduce_kernels.h"
 #include "flexflow/utils/hash_utils.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 // declare Legion names
@@ -105,6 +107,7 @@ OpMeta *AllReduce::init_task(Task const *task,
   AllReduceMeta *meta = new AllReduceMeta(handle, ar);
   meta->input_type[0] = ar->inputs[0]->data_type;
   meta->output_type[0] = ar->outputs[0]->data_type;
+  meta->transformer_layer_id = ar->layer_guid.transformer_layer_id;
   assert(meta->input_type[0] == meta->output_type[0]);
   return meta;
 }
@@ -330,6 +333,53 @@ void AllReduce::forward_task(Task const *task,
 
   assert(input.data_type == output.data_type);
   forward_kernel_wrapper(m, input, output);
+
+  // float *input_cpu = download_tensor<float>(input.get_float_ptr(), input.domain.get_volume());
+  // float *output_cpu = download_tensor<float>(output.get_float_ptr(), output.domain.get_volume());
+  // // Create the input/output file names with the transformer_id
+  // std::string inputFileName = "check_allreduce" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+  // std::string outputFileName = "check_allreduce" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // // Open the files in append mode
+  // std::ofstream inputFile(inputFileName, std::ios::app);
+  // std::ofstream outputFile(outputFileName, std::ios::app);
+  // // Check if the files were opened successfully
+  // if (!inputFile) {
+  //   std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+  //   assert(false);
+  // }
+  // if (!outputFile) {
+  //   std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+  //   assert(false);
+  // }
+  // // Set the output precision to 6 decimals
+  // inputFile << std::fixed << std::setprecision(6);
+  // outputFile << std::fixed << std::setprecision(6);
+  // // Write the elements to the file separated by spaces
+  // for (int i = 0; i < input.domain.get_volume(); ++i) {
+  //   inputFile << input_cpu[i];
+  //   if (i < input.domain.get_volume() - 1) {
+  //     inputFile << " ";
+  //   } else {
+  //     inputFile << std::endl;
+  //   }
+  // }
+  // // Write the elements to the file separated by spaces
+  // for (int i = 0; i < output.domain.get_volume(); ++i) {
+  //   outputFile << output_cpu[i];
+  //   if (i < output.domain.get_volume() - 1) {
+  //     outputFile << " ";
+  //   } else {
+  //     outputFile << std::endl;
+  //   }
+  // }
+  // // Close the file
+  // inputFile.close();
+  // outputFile.close();
+  // std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+  // std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  // checkCUDA(cudaFreeHost(input_cpu));
+  // checkCUDA(cudaFreeHost(output_cpu));
+
 }
 
 void AllReduce::backward_task(Task const *task,

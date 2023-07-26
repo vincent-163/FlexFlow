@@ -17,6 +17,8 @@
 #include "flexflow/model.h"
 #include "flexflow/parallel_ops/kernels/combine_kernels.h"
 #include "flexflow/utils/hash_utils.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 // declare Legion names
@@ -102,6 +104,7 @@ OpMeta *Combine::init_task(Task const *task,
   CombineMeta *m = new CombineMeta(handle);
   m->input_type[0] = cmb->inputs[0]->data_type;
   m->output_type[0] = cmb->outputs[0]->data_type;
+  m->transformer_layer_id = cmb->layer_guid.transformer_layer_id;
   assert(m->input_type[0] == m->output_type[0]);
   return m;
 }
@@ -389,12 +392,61 @@ void Combine::forward_task_with_type(Task const *task,
       ctx, task->regions[1].region.get_index_space());
   assert(output_domain == input_domain);
 
+  CombineMeta const *m = *((CombineMeta **)task->local_args);
+
   const DT *input_ptr = helperGetTensorPointerRO<DT>(
       regions[0], task->regions[0], FID_DATA, ctx, runtime);
   DT *output_ptr = helperGetTensorPointerWO<DT>(
       regions[1], task->regions[1], FID_DATA, ctx, runtime);
 
   forward_kernel<DT>(input_ptr, output_ptr, output_domain.get_volume());
+
+  float *input_cpu = download_tensor<float>((float*)input_ptr, input_domain.get_volume());
+  float *output_cpu = download_tensor<float>((float*)output_ptr, output_domain.get_volume());
+  // Create the input/output file names with the transformer_id
+  std::string inputFileName = "check_combine" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+  std::string outputFileName = "check_combine" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // Open the files in append mode
+  std::ofstream inputFile(inputFileName, std::ios::app);
+  std::ofstream outputFile(outputFileName, std::ios::app);
+  // Check if the files were opened successfully
+  if (!inputFile) {
+    std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!outputFile) {
+    std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  // Set the output precision to 6 decimals
+  inputFile << std::fixed << std::setprecision(6);
+  outputFile << std::fixed << std::setprecision(6);
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < input_domain.get_volume(); ++i) {
+    inputFile << input_cpu[i];
+    if (i < input_domain.get_volume() - 1) {
+      inputFile << " ";
+    } else {
+      inputFile << std::endl;
+    }
+  }
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < output_domain.get_volume(); ++i) {
+    outputFile << output_cpu[i];
+    if (i < output_domain.get_volume() - 1) {
+      outputFile << " ";
+    } else {
+      outputFile << std::endl;
+    }
+  }
+  // Close the file
+  inputFile.close();
+  outputFile.close();
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  checkCUDA(cudaFreeHost(input_cpu));
+  checkCUDA(cudaFreeHost(output_cpu));
+
 }
 
 void Combine::backward_task(Task const *task,

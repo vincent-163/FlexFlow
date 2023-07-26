@@ -3,6 +3,8 @@
 #include "flexflow/ops/kernels/dropout_kernels.h"
 #include "flexflow/utils/hash_utils.h"
 #include "legion/legion_utilities.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 
@@ -170,6 +172,7 @@ OpMeta *Dropout::init_task(Task const *task,
                        .first();
   assert(input_domain == output_domain);
   DropoutMeta *m = new DropoutMeta(handle, dropout, gpu_mem, output_domain);
+  m->transformer_layer_id = dropout->layer_guid.transformer_layer_id;
   return m;
 }
 
@@ -216,6 +219,56 @@ void Dropout::forward_task(Task const *task,
       regions[1], task->regions[1], FID_DATA, ctx, runtime);
 
   forward_kernel_wrapper(m, input_ptr, output_ptr);
+  GenericTensorAccessorR input = helperGetGenericTensorAccessorRO(
+      DT_FLOAT, regions[0], task->regions[0], FID_DATA, ctx, runtime);
+  GenericTensorAccessorW output = helperGetGenericTensorAccessorWO(
+      DT_FLOAT, regions[1], task->regions[1], FID_DATA, ctx, runtime);
+  float *input_cpu = download_tensor<float>(input.get_float_ptr(), input.domain.get_volume());
+  float *output_cpu = download_tensor<float>(output.get_float_ptr(), output.domain.get_volume());
+  // Create the input/output file names with the transformer_id
+  std::string inputFileName = "check_dropout" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+  std::string outputFileName = "check_dropout" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // Open the files in append mode
+  std::ofstream inputFile(inputFileName, std::ios::app);
+  std::ofstream outputFile(outputFileName, std::ios::app);
+  // Check if the files were opened successfully
+  if (!inputFile) {
+    std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!outputFile) {
+    std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  // Set the output precision to 6 decimals
+  inputFile << std::fixed << std::setprecision(6);
+  outputFile << std::fixed << std::setprecision(6);
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < input.domain.get_volume(); ++i) {
+    inputFile << input_cpu[i];
+    if (i < input.domain.get_volume() - 1) {
+      inputFile << " ";
+    } else {
+      inputFile << std::endl;
+    }
+  }
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < output.domain.get_volume(); ++i) {
+    outputFile << output_cpu[i];
+    if (i < output.domain.get_volume() - 1) {
+      outputFile << " ";
+    } else {
+      outputFile << std::endl;
+    }
+  }
+  // Close the file
+  inputFile.close();
+  outputFile.close();
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  checkCUDA(cudaFreeHost(input_cpu));
+  checkCUDA(cudaFreeHost(output_cpu));
+
 }
 
 void Dropout::backward(FFModel const &ff) {

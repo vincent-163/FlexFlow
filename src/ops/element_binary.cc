@@ -3,6 +3,8 @@
 #include "flexflow/ops/kernels/element_binary_kernels.h"
 #include "flexflow/utils/hash_utils.h"
 #include "legion/legion_utilities.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 
@@ -424,6 +426,7 @@ OpMeta *ElementBinary::init_task(Task const *task,
   m->has_same_operands = eb->has_same_operands;
   m->broadcast_input1 = eb->broadcast_input1;
   m->broadcast_input2 = eb->broadcast_input2;
+  m->transformer_layer_id = eb->layer_guid.transformer_layer_id;
   std::strcpy(m->op_name, eb->name);
   Domain input1_domain = runtime->get_index_space_domain(
       ctx, task->regions[0].region.get_index_space());
@@ -701,6 +704,72 @@ __host__ void
   }
 
   forward_kernel_wrapper(m, in1, in2, out);
+
+  float *input_cpu1 = download_tensor<float>(in1.get_float_ptr(), in1.domain.get_volume());
+  float *input_cpu2 = download_tensor<float>(in2.get_float_ptr(), in2.domain.get_volume());
+  float *output_cpu = download_tensor<float>(out.get_float_ptr(), out.domain.get_volume());
+  // Create the input/output file names with the transformer_id
+  std::string inputFileName1 = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input1.txt";
+  std::string inputFileName2 = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input2.txt";
+  std::string outputFileName = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // Open the files in append mode
+  std::ofstream inputFile1(inputFileName1, std::ios::app);
+  std::ofstream inputFile2(inputFileName2, std::ios::app);
+  std::ofstream outputFile(outputFileName, std::ios::app);
+  // Check if the files were opened successfully
+  if (!inputFile1) {
+    std::cerr << "Error opening the file '" << inputFileName1 << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!inputFile2) {
+    std::cerr << "Error opening the file '" << inputFileName2 << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!outputFile) {
+    std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  // Set the output precision to 6 decimals
+  inputFile1 << std::fixed << std::setprecision(6);
+  inputFile2 << std::fixed << std::setprecision(6);
+  outputFile << std::fixed << std::setprecision(6);
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < in1.domain.get_volume(); ++i) {
+    inputFile1 << input_cpu1[i];
+    if (i < in1.domain.get_volume() - 1) {
+      inputFile1 << " ";
+    } else {
+      inputFile1 << std::endl;
+    }
+  }
+  for (int i = 0; i < in2.domain.get_volume(); ++i) {
+    inputFile2 << input_cpu2[i];
+    if (i < in2.domain.get_volume() - 1) {
+      inputFile2 << " ";
+    } else {
+      inputFile2 << std::endl;
+    }
+  }
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < out.domain.get_volume(); ++i) {
+    outputFile << output_cpu[i];
+    if (i < out.domain.get_volume() - 1) {
+      outputFile << " ";
+    } else {
+      outputFile << std::endl;
+    }
+  }
+  // Close the file
+  inputFile1.close();
+  inputFile2.close();
+  outputFile.close();
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName1 << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName2 << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  checkCUDA(cudaFreeHost(input_cpu1));
+  checkCUDA(cudaFreeHost(input_cpu2));
+  checkCUDA(cudaFreeHost(output_cpu));
+
 }
 
 void ElementBinary::backward(FFModel const &ff) {

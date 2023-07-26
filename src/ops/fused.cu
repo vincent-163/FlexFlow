@@ -38,6 +38,8 @@
 #include "flexflow/ops/tree_inc_multihead_self_attention.h"
 #include "flexflow/parallel_ops/kernels/allreduce_kernels.h"
 #include "flexflow/utils/cuda_helper.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 // declare Legion names
@@ -622,6 +624,51 @@ __host__ void
                                                 in_dim,
                                                 out_dim,
                                                 batch_size);
+        float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName = "check_linear" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        std::string outputFileName = "check_linear" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile) {
+          std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile << input_cpu[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile << " ";
+          } else {
+            inputFile << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       case OP_BATCHMATMUL: {
@@ -678,6 +725,72 @@ __host__ void
                                                        my_input_accessor[0],
                                                        my_input_accessor[1],
                                                        my_output_accessor[0]);
+        
+        float *input_cpu1 = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *input_cpu2 = download_tensor<float>(my_input_accessor[1].get_float_ptr(), my_input_accessor[1].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName1 = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input1.txt";
+        std::string inputFileName2 = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input2.txt";
+        std::string outputFileName = "check_element_binary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile1(inputFileName1, std::ios::app);
+        std::ofstream inputFile2(inputFileName2, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile1) {
+          std::cerr << "Error opening the file '" << inputFileName1 << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!inputFile2) {
+          std::cerr << "Error opening the file '" << inputFileName2 << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile1 << std::fixed << std::setprecision(6);
+        inputFile2 << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile1 << input_cpu1[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile1 << " ";
+          } else {
+            inputFile1 << std::endl;
+          }
+        }
+        for (int i = 0; i < my_input_accessor[1].domain.get_volume(); ++i) {
+          inputFile2 << input_cpu2[i];
+          if (i < my_input_accessor[1].domain.get_volume() - 1) {
+            inputFile2 << " ";
+          } else {
+            inputFile2 << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile1.close();
+        inputFile2.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName1 << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName2 << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu1));
+        checkCUDA(cudaFreeHost(input_cpu2));
+        checkCUDA(cudaFreeHost(output_cpu));
+        
         break;
       }
       case OP_EMBEDDING: {
@@ -743,7 +856,54 @@ __host__ void
                                                    in_dim,
                                                    out_dim,
                                                    effective_batch_size);
-        break;
+
+        // float *input_cpu = download_tensor<float>(input.get_float_ptr(), input.domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        // std::string inputFileName = "check_embedding" + std::to_string(m->transformer_layer_id) + "_input.txt";
+        std::string outputFileName = "check_embedding" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        // std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        // if (!inputFile) {
+        //   std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+        //   assert(false);
+        // }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        // inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        // for (int i = 0; i < input.domain.get_volume(); ++i) {
+        //   inputFile << input_cpu[i];
+        //   if (i < input.domain.get_volume() - 1) {
+        //     inputFile << " ";
+        //   } else {
+        //     inputFile << std::endl;
+        //   }
+        // }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        // inputFile.close();
+        outputFile.close();
+        // std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        // checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
+       
+       break;
       }
       case OP_RELU:
       case OP_SIGMOID:
@@ -770,6 +930,54 @@ __host__ void
         } else {
           assert(false && "Unsupported data type in ElementUnary forward");
         }
+        assert(!m->inplace);
+        Domain output_domain = runtime->get_index_space_domain(
+              ctx, task->regions[1].region.get_index_space());
+        float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName = "check_element_unary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        std::string outputFileName = "check_element_unary" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile) {
+          std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile << input_cpu[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile << " ";
+          } else {
+            inputFile << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       case OP_RMS_NORM: {
@@ -781,6 +989,51 @@ __host__ void
                                                  my_input_accessor[0],
                                                  my_weight_accessor[0],
                                                  my_output_accessor[0]);
+        float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName = "check_rms_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        std::string outputFileName = "check_rms_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile) {
+          std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile << input_cpu[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile << " ";
+          } else {
+            inputFile << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       case OP_INC_MULTIHEAD_SELF_ATTENTION: {
@@ -802,6 +1055,51 @@ __host__ void
             my_weight_accessor[0],
             my_output_accessor[0],
             biases);
+        float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName = "check_incMHA" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        std::string outputFileName = "check_incMHA" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile) {
+          std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile << input_cpu[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile << " ";
+          } else {
+            inputFile << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       case OP_TREE_INC_MULTIHEAD_SELF_ATTENTION: {
@@ -862,6 +1160,51 @@ __host__ void
         }
         LayerNorm::forward_kernel_wrapper(
             m, my_input_accessor[0], my_output_accessor[0], gamma, beta);
+        float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // Create the input/output file names with the transformer_id
+        std::string inputFileName = "check_layer_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        std::string outputFileName = "check_layer_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // Open the files in append mode
+        std::ofstream inputFile(inputFileName, std::ios::app);
+        std::ofstream outputFile(outputFileName, std::ios::app);
+        // Check if the files were opened successfully
+        if (!inputFile) {
+          std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        if (!outputFile) {
+          std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+          assert(false);
+        }
+        // Set the output precision to 6 decimals
+        inputFile << std::fixed << std::setprecision(6);
+        outputFile << std::fixed << std::setprecision(6);
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+          inputFile << input_cpu[i];
+          if (i < my_input_accessor[0].domain.get_volume() - 1) {
+            inputFile << " ";
+          } else {
+            inputFile << std::endl;
+          }
+        }
+        // Write the elements to the file separated by spaces
+        for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+          outputFile << output_cpu[i];
+          if (i < my_output_accessor[0].domain.get_volume() - 1) {
+            outputFile << " ";
+          } else {
+            outputFile << std::endl;
+          }
+        }
+        // Close the file
+        inputFile.close();
+        outputFile.close();
+        std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        checkCUDA(cudaFreeHost(input_cpu));
+        checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       case OP_ALLREDUCE: {
@@ -870,6 +1213,51 @@ __host__ void
         AllReduceMeta const *m = (AllReduceMeta *)metas->meta[op];
         Kernels::AllReduce::forward_kernel_wrapper(
             m, my_input_accessor[0], my_output_accessor[0]);
+        // float *input_cpu = download_tensor<float>(my_input_accessor[0].get_float_ptr(), my_input_accessor[0].domain.get_volume());
+        // float *output_cpu = download_tensor<float>(my_output_accessor[0].get_float_ptr(), my_output_accessor[0].domain.get_volume());
+        // // Create the input/output file names with the transformer_id
+        // std::string inputFileName = "check_allreduce" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+        // std::string outputFileName = "check_allreduce" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+        // // Open the files in append mode
+        // std::ofstream inputFile(inputFileName, std::ios::app);
+        // std::ofstream outputFile(outputFileName, std::ios::app);
+        // // Check if the files were opened successfully
+        // if (!inputFile) {
+        //   std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+        //   assert(false);
+        // }
+        // if (!outputFile) {
+        //   std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+        //   assert(false);
+        // }
+        // // Set the output precision to 6 decimals
+        // inputFile << std::fixed << std::setprecision(6);
+        // outputFile << std::fixed << std::setprecision(6);
+        // // Write the elements to the file separated by spaces
+        // for (int i = 0; i < my_input_accessor[0].domain.get_volume(); ++i) {
+        //   inputFile << input_cpu[i];
+        //   if (i < my_input_accessor[0].domain.get_volume() - 1) {
+        //     inputFile << " ";
+        //   } else {
+        //     inputFile << std::endl;
+        //   }
+        // }
+        // // Write the elements to the file separated by spaces
+        // for (int i = 0; i < my_output_accessor[0].domain.get_volume(); ++i) {
+        //   outputFile << output_cpu[i];
+        //   if (i < my_output_accessor[0].domain.get_volume() - 1) {
+        //     outputFile << " ";
+        //   } else {
+        //     outputFile << std::endl;
+        //   }
+        // }
+        // // Close the file
+        // inputFile.close();
+        // outputFile.close();
+        // std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+        // std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+        // checkCUDA(cudaFreeHost(input_cpu));
+        // checkCUDA(cudaFreeHost(output_cpu));
         break;
       }
       default: {

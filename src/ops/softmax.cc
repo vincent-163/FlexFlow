@@ -17,6 +17,8 @@
 #include "flexflow/model.h"
 #include "flexflow/ops/kernels/softmax_kernels.h"
 #include "flexflow/utils/hash_utils.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 // declare Legion names
@@ -229,6 +231,7 @@ OpMeta *Softmax::init_task(Task const *task,
   SoftmaxMeta *m = new SoftmaxMeta(handle, softmax, domain);
   m->input_type = softmax->inputs[0]->data_type;
   m->output_type = softmax->outputs[0]->data_type;
+  m->transformer_layer_id = softmax->layer_guid.transformer_layer_id;
   // checkCUDNN(cudnnCreateTensorDescriptor(&m->outputTensor));
   return m;
 }
@@ -454,6 +457,60 @@ InferenceResult
     default:
       assert(false);
   }
+  GenericTensorAccessorR in = helperGetGenericTensorAccessorRO(
+      m->output_type, regions[0], task->regions[0], FID_DATA, ctx, runtime);
+  GenericTensorAccessorW out = helperGetGenericTensorAccessorWO(
+      m->output_type, regions[1], task->regions[1], FID_DATA, ctx, runtime);
+  Domain out_domain = runtime->get_index_space_domain(
+      ctx, task->regions[1].region.get_index_space());
+  float *input_cpu = download_tensor<float>(in.get_float_ptr(), in_domain.get_volume());
+  float *output_cpu = download_tensor<float>(out.get_float_ptr(), out_domain.get_volume());
+  // Create the input/output file names with the transformer_id
+  std::string inputFileName = "check_softmax" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+  std::string outputFileName = "check_softmax" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // Open the files in append mode
+  std::ofstream inputFile(inputFileName, std::ios::app);
+  std::ofstream outputFile(outputFileName, std::ios::app);
+  // Check if the files were opened successfully
+  if (!inputFile) {
+    std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!outputFile) {
+    std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  // Set the output precision to 6 decimals
+  inputFile << std::fixed << std::setprecision(6);
+  outputFile << std::fixed << std::setprecision(6);
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < in_domain.get_volume(); ++i) {
+    inputFile << input_cpu[i];
+    if (i < in_domain.get_volume() - 1) {
+      inputFile << " ";
+    } else {
+      inputFile << std::endl;
+    }
+  }
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < out_domain.get_volume(); ++i) {
+    outputFile << output_cpu[i];
+    if (i < out_domain.get_volume() - 1) {
+      outputFile << " ";
+    } else {
+      outputFile << std::endl;
+    }
+  }
+  // Close the file
+  inputFile.close();
+  outputFile.close();
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  checkCUDA(cudaFreeHost(input_cpu));
+  checkCUDA(cudaFreeHost(output_cpu));
+
+
+
   // FIXME: replace this with actual result
   InferenceResult ir;
   return ir;

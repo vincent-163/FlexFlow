@@ -18,6 +18,8 @@
 #include "flexflow/ops/kernels/rms_norm_kernels.h"
 #include "flexflow/utils/hash_utils.h"
 #include "legion/legion_utilities.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 namespace FlexFlow {
 
@@ -290,6 +292,7 @@ OpMeta *RMSNorm::init_task(Task const *task,
   RMSNorm *rn = (RMSNorm *)task->args;
   FFHandler handle = *((FFHandler const *)task->local_args);
   RMSNormMeta *meta = new RMSNormMeta(handle, rn);
+  meta->transformer_layer_id = rn->layer_guid.transformer_layer_id;
   return meta;
 }
 
@@ -388,6 +391,55 @@ void RMSNorm::forward_task(Task const *task,
   GenericTensorAccessorR weight = helperGetGenericTensorAccessorRO(
       m->weight_type[0], regions[2], task->regions[2], FID_DATA, ctx, runtime);
   forward_kernel_wrapper(m, input, weight, output);
+
+  Domain in_domain = runtime->get_index_space_domain(ctx, task->regions[0].region.get_index_space());
+  Domain out_domain = runtime->get_index_space_domain(ctx, task->regions[1].region.get_index_space());
+  float *input_cpu = download_tensor<float>(input.get_float_ptr(), in_domain.get_volume());
+  float *output_cpu = download_tensor<float>(output.get_float_ptr(), out_domain.get_volume());
+  // Create the input/output file names with the transformer_id
+  std::string inputFileName = "check_rms_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_input.txt";
+  std::string outputFileName = "check_rms_norm" + std::to_string(m->transformer_layer_id) + "_" + std::to_string(task->index_point.point_data[0]) + "_output.txt";
+  // Open the files in append mode
+  std::ofstream inputFile(inputFileName, std::ios::app);
+  std::ofstream outputFile(outputFileName, std::ios::app);
+  // Check if the files were opened successfully
+  if (!inputFile) {
+    std::cerr << "Error opening the file '" << inputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  if (!outputFile) {
+    std::cerr << "Error opening the file '" << outputFileName << "' for appending." << std::endl;
+    assert(false);
+  }
+  // Set the output precision to 6 decimals
+  inputFile << std::fixed << std::setprecision(6);
+  outputFile << std::fixed << std::setprecision(6);
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < in_domain.get_volume(); ++i) {
+    inputFile << input_cpu[i];
+    if (i < in_domain.get_volume() - 1) {
+      inputFile << " ";
+    } else {
+      inputFile << std::endl;
+    }
+  }
+  // Write the elements to the file separated by spaces
+  for (int i = 0; i < out_domain.get_volume(); ++i) {
+    outputFile << output_cpu[i];
+    if (i < out_domain.get_volume() - 1) {
+      outputFile << " ";
+    } else {
+      outputFile << std::endl;
+    }
+  }
+  // Close the file
+  inputFile.close();
+  outputFile.close();
+  std::cout << "Array elements (with 6 decimals) appended to '" << inputFileName << "' successfully." << std::endl;
+  std::cout << "Array elements (with 6 decimals) appended to '" << outputFileName << "' successfully." << std::endl;
+  checkCUDA(cudaFreeHost(input_cpu));
+  checkCUDA(cudaFreeHost(output_cpu));
+
 }
 
 void RMSNorm::serialize(Legion::Serializer &sez) const {

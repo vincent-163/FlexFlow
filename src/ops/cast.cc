@@ -18,6 +18,8 @@
 #include "flexflow/ops/kernels/cast_kernels.h"
 #include "flexflow/utils/hash_utils.h"
 #include "legion/legion_utilities.h"
+#include "flexflow/utils/cuda_helper.h"
+#include <iomanip> // for std::fixed and std::setprecision
 
 using namespace FlexFlow::Kernels::Cast;
 
@@ -193,6 +195,7 @@ OpMeta *Cast::init_task(Task const *task,
   CastMeta *m = new CastMeta(handler);
   m->input_data_type = cast->inputs[0]->data_type;
   m->output_data_type = cast->outputs[0]->data_type;
+  m->transformer_layer_id = cast->layer_guid.transformer_layer_id;
   return m;
 }
 

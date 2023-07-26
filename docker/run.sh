@@ -69,4 +69,4 @@ if [[ "$(docker images -q "$image"-"$FF_GPU_BACKEND""$cuda_version_hyphen":lates
   exit 1
 fi
 
-eval docker run -it "$gpu_arg" "--shm-size=${SHM_SIZE}" "${image}-${FF_GPU_BACKEND}${cuda_version_hyphen}:latest"
+eval docker run -it "$gpu_arg" "--shm-size=${SHM_SIZE}" -v "$(pwd)"/../inference/weights:/usr/FlexFlow/inference/weights -v "$(pwd)"/../inference/prompt:/usr/FlexFlow/inference/prompt -v "$(pwd)"/../inference/tokenizer:/usr/FlexFlow/inference/tokenizer "${image}-${FF_GPU_BACKEND}${cuda_version_hyphen}:latest"
